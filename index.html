@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>移工案件區塊化追蹤系統 - 視覺預覽版</title>
+    <style>
+        :root {
+            --primary-color: #4A90E2;
+            --bg-color: #F4F7F6;
+            --card-bg: #FFFFFF;
+            --border-radius: 8px;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            padding: 20px;
+            color: #333;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .add-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 16px;
+            transition: background 0.3s;
+        }
+        .add-btn:hover {
+            background-color: #357ABD;
+        }
+        .board {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 20px;
+        }
+        .case-block {
+            background-color: var(--card-bg);
+            border-radius: var(--border-radius);
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            border-top: 5px solid var(--primary-color);
+        }
+        .block-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+        .block-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .status-badge {
+            font-size: 12px;
+            background-color: #e2e8f0;
+            padding: 4px 8px;
+            border-radius: 12px;
+            color: #475569;
+        }
+        .sub-task {
+            background-color: #f9f9f9;
+            padding: 12px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            border-left: 4px solid #F5A623;
+        }
+        .sub-task.transfer-in { border-left-color: #7ED321; } /* 承接用綠色 */
+        .sub-task.transfer-out { border-left-color: #D0021B; } /* 轉出用紅色 */
+        
+        .task-detail {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        .task-detail:last-child {
+            margin-bottom: 0;
+        }
+        .edit-btn {
+            background: none;
+            border: 1px solid #ccc;
+            padding: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-top: 10px;
+            width: 100%;
+            transition: background 0.2s;
+        }
+        .edit-btn:hover {
+            background-color: #f1f5f9;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="header">
+        <h2>📑 複雜案件追蹤看板 (預覽模式)</h2>
+        <button class="add-btn" onclick="alert('視覺預覽版：此按鈕未來將會新增一個空白區塊')">+ 新增關聯區塊</button>
+    </div>
+
+    <div class="board" id="boardContainer">
+        </div>
+
+    <script>
+        // 模擬 Firebase 讀取到的資料結構
+        const mockData = {
+            "block_001": {
+                "blockTitle": "王阿姨承接與李先生轉出案",
+                "mainStatus": "處理中",
+                "subTasks": {
+                    "task_1": {
+                        "type": "轉出",
+                        "employerName": "李先生",
+                        "workerName": "Wati (阿蒂)",
+                        "progress": "勞工局發函中"
+                    },
+                    "task_2": {
+                        "type": "承接",
+                        "employerName": "王阿姨",
+                        "workerName": "Wati (阿蒂)",
+                        "progress": "等待接續通報"
+                    }
+                }
+            },
+            "block_002": {
+                "blockTitle": "張公館急件承接專案",
+                "mainStatus": "即將結案",
+                "subTasks": {
+                    "task_1": {
+                        "type": "轉出",
+                        "employerName": "林太太",
+                        "workerName": "Siti (西蒂)",
+                        "progress": "廢聘函已核發"
+                    },
+                    "task_2": {
+                        "type": "承接",
+                        "employerName": "張先生",
+                        "workerName": "Siti (西蒂)",
+                        "progress": "三方合約已簽署"
+                    },
+                    "task_3": {
+                        "type": "其他",
+                        "employerName": "仲介端",
+                        "workerName": "Siti (西蒂)",
+                        "progress": "安排體檢與住宿確認"
+                    }
+                }
+            }
+        };
+
+        // 網頁載入後立即執行渲染
+        window.onload = function() {
+            const container = document.getElementById('boardContainer');
+            
+            Object.keys(mockData).forEach(blockId => {
+                const blockData = mockData[blockId];
+                const blockEl = document.createElement('div');
+                blockEl.className = 'case-block';
+                
+                let subTasksHtml = '';
+                if(blockData.subTasks) {
+                    Object.keys(blockData.subTasks).forEach(taskId => {
+                        const task = blockData.subTasks[taskId];
+                        // 根據類型決定左側邊框顏色
+                        let taskClass = '';
+                        if(task.type === '承接') taskClass = 'transfer-in';
+                        else if(task.type === '轉出') taskClass = 'transfer-out';
+
+                        subTasksHtml += `
+                            <div class="sub-task ${taskClass}">
+                                <div class="task-detail">
+                                    <strong>${task.type}：${task.employerName}</strong>
+                                    <span>移工：${task.workerName}</span>
+                                </div>
+                                <div class="task-detail">
+                                    <span>目前進度：</span>
+                                    <span style="color: #0284c7; font-weight: bold;">${task.progress}</span>
+                                </div>
+                            </div>
+                        `;
+                    });
+                }
+
+                blockEl.innerHTML = `
+                    <div class="block-header">
+                        <div class="block-title">${blockData.blockTitle}</div>
+                        <span class="status-badge">${blockData.mainStatus}</span>
+                    </div>
+                    ${subTasksHtml}
+                    <button class="edit-btn" onclick="alert('視覺預覽版：未來點擊這裡會彈出可修改進度的視窗！')">✏️ 編輯此區塊內容</button>
+                `;
+                container.appendChild(blockEl);
+            });
+        };
+    </script>
+</body>
+</html>
