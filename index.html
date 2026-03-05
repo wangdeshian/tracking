@@ -2,8 +2,8 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>移工案件區塊化追蹤系統 - 標準化選單版</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>預計承接轉換紀錄</title>
     <style>
         :root {
             --primary-color: #4A90E2;
@@ -15,6 +15,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
             padding: 20px;
+            margin: 0;
             color: #333;
         }
         .header {
@@ -23,14 +24,16 @@
             align-items: center;
             margin-bottom: 20px;
         }
+        h2 { margin: 0; }
         .add-btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border-radius: var(--border-radius);
             cursor: pointer;
             font-size: 16px;
+            font-weight: bold;
         }
         .board {
             display: grid;
@@ -56,9 +59,9 @@
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
+            padding: 4px 0; /* 增加手指點擊範圍 */
         }
         
-        /* 區塊主狀態標籤與顏色 */
         .status-badge {
             font-size: 13px;
             padding: 6px 10px;
@@ -66,21 +69,22 @@
             font-weight: bold;
             cursor: pointer;
             border: 1px solid transparent;
+            display: inline-block;
         }
-        .status-badge:hover { opacity: 0.8; }
-        .status-prepare { background-color: #dcfce7; color: #166534; border-color: #86efac; } /* 🟢準備中 */
-        .status-process { background-color: #e0f2fe; color: #0369a1; border-color: #7dd3fc; } /* 🔵處理中 */
-        .status-stuck { background-color: #ffedd5; color: #c2410c; border-color: #fdba74; }   /* 🟠卡關 */
-        .status-urgent { background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; }  /* 🔴急件 */
-        .status-closed { background-color: #f1f5f9; color: #475569; border-color: #cbd5e1; }  /* ⚫已結案 */
+        .status-prepare { background-color: #dcfce7; color: #166534; border-color: #86efac; } 
+        .status-process { background-color: #e0f2fe; color: #0369a1; border-color: #7dd3fc; } 
+        .status-stuck { background-color: #ffedd5; color: #c2410c; border-color: #fdba74; }   
+        .status-urgent { background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; }  
+        .status-closed { background-color: #f1f5f9; color: #475569; border-color: #cbd5e1; }  
 
         .delete-btn {
             background: none;
             border: none;
             cursor: pointer;
             color: #ef4444;
-            font-size: 16px;
+            font-size: 18px;
             margin-left: 10px;
+            padding: 5px; /* 增加手指點擊範圍 */
         }
         .sub-task {
             background-color: #f9f9f9;
@@ -98,22 +102,24 @@
             font-size: 14px;
             margin-bottom: 8px;
         }
-        .editable-text { cursor: pointer; }
+        .editable-text { 
+            cursor: pointer; 
+            padding: 4px 0; /* 手機端點擊更友善 */
+        }
         .editable-text:hover { color: var(--primary-color); text-decoration: underline; }
 
         .progress-box {
             background-color: #e0f2fe;
-            padding: 10px;
+            padding: 12px;
             border-radius: 6px;
-            margin-top: 8px;
-            font-size: 13px;
+            margin-top: 10px;
+            font-size: 14px;
             line-height: 1.6;
             cursor: pointer;
             border: 1px dashed #7dd3fc;
         }
-        .progress-box:hover { background-color: #bae6fd; }
         .progress-hint {
-            font-size: 12px;
+            font-size: 13px;
             color: #0284c7;
             margin-bottom: 6px;
             font-weight: bold;
@@ -124,33 +130,65 @@
         /* 彈跳視窗 (Modal) 樣式 */
         dialog {
             border: none;
-            border-radius: 8px;
+            border-radius: 12px;
             padding: 20px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.2);
             width: 90%;
             max-width: 400px;
         }
-        dialog::backdrop { background-color: rgba(0,0,0,0.5); }
+        dialog::backdrop { background-color: rgba(0,0,0,0.6); }
         .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
+        
+        /* 關鍵：字體設定 16px 避免 iOS Safari 自動放大 */
         select, input[type="text"] {
             width: 100%;
-            padding: 10px;
+            padding: 12px;
             margin-bottom: 15px;
             border: 1px solid #ccc;
-            border-radius: 4px;
+            border-radius: 6px;
             box-sizing: border-box;
-            font-size: 14px;
+            font-size: 16px; 
+            background-color: #fff;
         }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
-        .btn-cancel { background: #f1f5f9; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-        .btn-save { background: var(--primary-color); color: white; border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-cancel { background: #f1f5f9; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
+        .btn-save { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
+
+        /* 手機版專屬排版 (螢幕寬度小於 600px 時自動觸發) */
+        @media (max-width: 600px) {
+            body { padding: 10px; }
+            .header { 
+                flex-direction: column; 
+                align-items: stretch; 
+                gap: 15px; 
+            }
+            h2 { font-size: 22px; text-align: center; }
+            .add-btn { width: 100%; padding: 15px; font-size: 18px; }
+            .board { grid-template-columns: 1fr; /* 強制單欄排列 */ }
+            .task-detail { 
+                flex-direction: column; /* 將雇主跟移工拆成上下行，更好按 */
+                align-items: flex-start;
+                gap: 5px;
+            }
+            .block-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+            .block-header > div {
+                width: 100%;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>📑 移工複雜案件追蹤看板 (標準化選單版)</h2>
-        <button class="add-btn" id="addBlockBtn">+ 新增測試區塊</button>
+        <h2>📑 預計承接轉換紀錄</h2>
+        <button class="add-btn" id="addBlockBtn">+ 新增案件</button>
     </div>
 
     <div class="board" id="boardContainer">
@@ -167,230 +205,4 @@
             <option value="⚫ 已結案">⚫ 已結案 (流程與居留證辦妥)</option>
         </select>
         <div class="modal-actions">
-            <button class="btn-cancel" onclick="document.getElementById('statusModal').close()">取消</button>
-            <button class="btn-save" onclick="saveMainStatus()">儲存狀態</button>
-        </div>
-    </dialog>
-
-    <dialog id="progressModal">
-        <div class="modal-title">新增進度歷程</div>
-        <select id="progressSelect">
-            <option value="">-- 請選擇標準化進度 --</option>
-            <optgroup label="【轉出端 / 原雇主進度】">
-                <option value="雙方簽署轉換同意書">雙方簽署轉換同意書</option>
-                <option value="勞工局發函中 (等待驗證)">勞工局發函中 (等待驗證)</option>
-                <option value="取得廢聘函 / 轉換函">取得廢聘函 / 轉換函</option>
-                <option value="移工安置 / 等待期中">移工安置 / 等待期中</option>
-                <option value="已完成轉出登出">已完成轉出登出</option>
-            </optgroup>
-            <optgroup label="【承接端 / 新雇主進度】">
-                <option value="確認長照評估資格 / 取得診斷證明書">確認長照評估資格 / 取得診斷證明書</option>
-                <option value="簽署三方合約">簽署三方合約</option>
-                <option value="辦理接續通報 (地方勞工局)">辦理接續通報 (地方勞工局)</option>
-                <option value="勞動部核發接續聘僱許可函">勞動部核發接續聘僱許可函</option>
-                <option value="安排移工報到與交接">安排移工報到與交接</option>
-            </optgroup>
-            <optgroup label="【後續行政與維護 (共通進度)】">
-                <option value="安排定期體檢 (入境/滿期)">安排定期體檢 (入境/滿期)</option>
-                <option value="移民署辦理居留證 (ARC) 變更或展延">移民署辦理居留證 (ARC) 變更或展延</option>
-                <option value="勞健保加退保作業">勞健保加退保作業</option>
-                <option value="住宿地點變更通報">住宿地點變更通報</option>
-            </optgroup>
-            <optgroup label="【其他】">
-                <option value="自訂輸入">✏️ 自訂輸入 (請在下方填寫)</option>
-            </optgroup>
-        </select>
-        <input type="text" id="customNote" placeholder="自訂文字或備註說明 (選填)...">
-        <div class="modal-actions">
-            <button class="btn-cancel" onclick="document.getElementById('progressModal').close()">取消</button>
-            <button class="btn-save" onclick="saveProgress()">寫入歷程</button>
-        </div>
-    </dialog>
-
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyBds2Qlh-ySODs716sNWSxbfK1smg5b-VI",
-            authDomain: "adamtracking-832c3.firebaseapp.com",
-            projectId: "adamtracking-832c3",
-            storageBucket: "adamtracking-832c3.firebasestorage.app",
-            messagingSenderId: "944450999714",
-            appId: "1:944450999714:web:f25545cd4c36b3b6f5cefb",
-            measurementId: "G-TETKPD01G2",
-            databaseURL: "https://adamtracking-832c3-default-rtdb.asia-southeast1.firebasedatabase.app/" 
-        };
-
-        const app = initializeApp(firebaseConfig);
-        const db = getDatabase(app);
-        const blocksRef = ref(db, 'caseBlocks');
-
-        // 全域變數，紀錄當下正在編輯哪一個區塊與任務
-        let currentEditBlockId = null;
-        let currentEditTaskId = null;
-        let currentEncodedProgress = null;
-
-        // 解析狀態對應的 CSS class
-        function getStatusClass(statusText) {
-            if(statusText.includes("準備中")) return "status-prepare";
-            if(statusText.includes("處理中")) return "status-process";
-            if(statusText.includes("卡關")) return "status-stuck";
-            if(statusText.includes("急件")) return "status-urgent";
-            if(statusText.includes("結案")) return "status-closed";
-            return "status-process"; // 預設
-        }
-
-        onValue(blocksRef, (snapshot) => {
-            const container = document.getElementById('boardContainer');
-            container.innerHTML = ''; 
-            const data = snapshot.val();
-            if(data) {
-                Object.keys(data).forEach(blockId => renderBlock(blockId, data[blockId]));
-            } else {
-                container.innerHTML = '<p style="color: #888;">目前沒有任何案件區塊，請點擊右上方新增。</p>';
-            }
-        });
-
-        function renderBlock(blockId, blockData) {
-            const container = document.getElementById('boardContainer');
-            const blockEl = document.createElement('div');
-            blockEl.className = 'case-block';
-            
-            let subTasksHtml = '';
-            if(blockData.subTasks) {
-                Object.keys(blockData.subTasks).forEach(taskId => {
-                    const task = blockData.subTasks[taskId];
-                    let taskClass = task.type === '承接' ? 'transfer-in' : (task.type === '轉出' ? 'transfer-out' : '');
-                    
-                    let progressString = task.progress || "尚未建立進度";
-                    let progressLinesHtml = progressString.split('\n').map(line => `<div>${line}</div>`).join('');
-                    let safeProgressData = encodeURIComponent(progressString);
-
-                    subTasksHtml += `
-                        <div class="sub-task ${taskClass}">
-                            <div class="task-detail">
-                                <strong class="editable-text" onclick="updateField('/caseBlocks/${blockId}/subTasks/${taskId}/employerName', '${task.employerName}', '修改雇主姓名：')">
-                                    ${task.type}：${task.employerName} ✏️
-                                </strong>
-                                <span class="editable-text" onclick="updateField('/caseBlocks/${blockId}/subTasks/${taskId}/workerName', '${task.workerName}', '修改移工姓名：')">
-                                    移工：${task.workerName} ✏️
-                                </span>
-                            </div>
-                            <div class="progress-box" onclick="openProgressModal('${blockId}', '${taskId}', '${safeProgressData}')">
-                                <div class="progress-hint"><span>🕒 點擊新增進度</span><span>➕</span></div>
-                                <div style="color: #0369a1;">${progressLinesHtml}</div>
-                            </div>
-                        </div>
-                    `;
-                });
-            }
-
-            const statusClass = getStatusClass(blockData.mainStatus);
-            
-            blockEl.innerHTML = `
-                <div class="block-header">
-                    <div class="block-title editable-text" onclick="updateField('/caseBlocks/${blockId}/blockTitle', '${blockData.blockTitle}', '修改區塊標題：')">
-                        ${blockData.blockTitle} ✏️
-                    </div>
-                    <div>
-                        <span class="status-badge ${statusClass}" onclick="openStatusModal('${blockId}', '${blockData.mainStatus}')">
-                            ${blockData.mainStatus} ⚙️
-                        </span>
-                        <button class="delete-btn" onclick="deleteBlock('${blockId}')">🗑️</button>
-                    </div>
-                </div>
-                ${subTasksHtml}
-            `;
-            container.appendChild(blockEl);
-        }
-
-        // --- 彈跳視窗控制邏輯 ---
-
-        // 打開主狀態選單
-        window.openStatusModal = function(blockId, currentStatus) {
-            currentEditBlockId = blockId;
-            document.getElementById('statusSelect').value = currentStatus;
-            document.getElementById('statusModal').showModal();
-        };
-
-        // 儲存主狀態
-        window.saveMainStatus = function() {
-            const newStatus = document.getElementById('statusSelect').value;
-            const updates = {};
-            updates[`/caseBlocks/${currentEditBlockId}/mainStatus`] = newStatus;
-            update(ref(db), updates).then(() => {
-                document.getElementById('statusModal').close();
-            });
-        };
-
-        // 打開子任務進度選單
-        window.openProgressModal = function(blockId, taskId, encodedProgress) {
-            currentEditBlockId = blockId;
-            currentEditTaskId = taskId;
-            currentEncodedProgress = encodedProgress;
-            
-            document.getElementById('progressSelect').value = ""; // 重置選單
-            document.getElementById('customNote').value = "";     // 重置備註
-            document.getElementById('progressModal').showModal();
-        };
-
-        // 儲存子任務進度
-        window.saveProgress = function() {
-            const selectedText = document.getElementById('progressSelect').value;
-            const customNote = document.getElementById('customNote').value.trim();
-            
-            if(!selectedText && !customNote) {
-                alert("請至少選擇一個進度，或填寫自訂內容！");
-                return;
-            }
-
-            // 組合新進度字串
-            let newStatusText = selectedText;
-            if(selectedText === "自訂輸入") newStatusText = ""; 
-            if(customNote) newStatusText += (newStatusText ? " - " : "") + customNote;
-
-            const currentProgress = decodeURIComponent(currentEncodedProgress);
-            const today = new Date();
-            const dateString = `[${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}]`;
-            const newEntry = `${dateString} ${newStatusText}`;
-            
-            let finalProgress = "";
-            if(currentProgress.includes("尚未建立進度")) {
-                finalProgress = newEntry;
-            } else {
-                finalProgress = newEntry + "\n" + currentProgress;
-            }
-
-            const updates = {};
-            updates[`/caseBlocks/${currentEditBlockId}/subTasks/${currentEditTaskId}/progress`] = finalProgress;
-            update(ref(db), updates).then(() => {
-                document.getElementById('progressModal').close();
-            });
-        };
-
-        // 原有功能
-        window.updateField = function(path, currentValue, promptMsg) {
-            const newValue = prompt(promptMsg, currentValue);
-            if(newValue && newValue.trim() !== "" && newValue !== currentValue) {
-                const updates = {}; updates[path] = newValue.trim();
-                update(ref(db), updates);
-            }
-        };
-
-        window.deleteBlock = function(blockId) {
-            if(confirm("⚠️ 確定要刪除整個案件區塊嗎？")) remove(ref(db, 'caseBlocks/' + blockId));
-        };
-
-        document.getElementById('addBlockBtn').addEventListener('click', () => {
-            set(push(blocksRef), {
-                blockTitle: "新轉換承接專案", mainStatus: "🔵 處理中",
-                subTasks: {
-                    t1: { type: "轉出", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" },
-                    t2: { type: "承接", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" }
-                }
-            });
-        });
-    </script>
-</body>
-</html>
+            <button class="btn-cancel" onclick="document.getElementById('statusModal').close()">取消</button
