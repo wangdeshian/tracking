@@ -39,12 +39,34 @@
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
             gap: 20px;
+            align-items: start; /* 讓卡片各自維持高度 */
         }
+        
+        /* 🔗 連動案件專用的虛線外框 */
+        .linked-group {
+            border: 2px dashed #94a3b8;
+            border-radius: 12px;
+            padding: 15px;
+            background-color: #f8fafc;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .linked-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #64748b;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
         .case-block {
             background-color: var(--card-bg);
             border-radius: var(--border-radius);
             padding: 20px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            /* 預設邊框顏色，將由 JS 動態覆寫 */
             border-top: 5px solid var(--primary-color);
         }
         .block-header {
@@ -59,7 +81,7 @@
             font-size: 18px;
             font-weight: bold;
             cursor: pointer;
-            padding: 4px 0; /* 增加手指點擊範圍 */
+            padding: 4px 0;
         }
         
         .status-badge {
@@ -77,35 +99,32 @@
         .status-urgent { background-color: #fee2e2; color: #b91c1c; border-color: #fca5a5; }  
         .status-closed { background-color: #f1f5f9; color: #475569; border-color: #cbd5e1; }  
 
-        .delete-btn {
+        .action-icons {
+            display: flex;
+            gap: 8px;
+        }
+        .icon-btn {
             background: none;
             border: none;
             cursor: pointer;
-            color: #ef4444;
             font-size: 18px;
-            margin-left: 10px;
-            padding: 5px; /* 增加手指點擊範圍 */
+            padding: 5px;
+            transition: transform 0.2s;
         }
+        .icon-btn:hover { transform: scale(1.1); }
+
         .sub-task {
             background-color: #f9f9f9;
             padding: 12px;
             border-radius: 6px;
             margin-bottom: 12px;
-            border-left: 4px solid #F5A623;
+            border-left: 5px solid #ccc; 
         }
-        .sub-task.transfer-in { border-left-color: #7ED321; } 
-        .sub-task.transfer-out { border-left-color: #D0021B; } 
+        .sub-task.transfer-in { border-left-color: #10B981; } 
+        .sub-task.transfer-out { border-left-color: #3B82F6; } 
         
-        .task-detail {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            margin-bottom: 8px;
-        }
-        .editable-text { 
-            cursor: pointer; 
-            padding: 4px 0; /* 手機端點擊更友善 */
-        }
+        .task-detail { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 8px; }
+        .editable-text { cursor: pointer; padding: 4px 0; }
         .editable-text:hover { color: var(--primary-color); text-decoration: underline; }
 
         .progress-box {
@@ -118,69 +137,28 @@
             cursor: pointer;
             border: 1px dashed #7dd3fc;
         }
-        .progress-hint {
-            font-size: 13px;
-            color: #0284c7;
-            margin-bottom: 6px;
-            font-weight: bold;
-            display: flex;
-            justify-content: space-between;
-        }
+        .progress-hint { font-size: 13px; color: #0284c7; margin-bottom: 6px; font-weight: bold; display: flex; justify-content: space-between; }
 
-        /* 彈跳視窗 (Modal) 樣式 */
-        dialog {
-            border: none;
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-            width: 90%;
-            max-width: 400px;
-        }
+        dialog { border: none; border-radius: 12px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 400px; }
         dialog::backdrop { background-color: rgba(0,0,0,0.6); }
         .modal-title { font-size: 18px; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px; }
         
-        /* 關鍵：字體設定 16px 避免 iOS Safari 自動放大 */
         select, input[type="text"] {
-            width: 100%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 1px solid #ccc;
-            border-radius: 6px;
-            box-sizing: border-box;
-            font-size: 16px; 
-            background-color: #fff;
+            width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 16px; background-color: #fff;
         }
         .modal-actions { display: flex; justify-content: flex-end; gap: 10px; }
         .btn-cancel { background: #f1f5f9; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
         .btn-save { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
 
-        /* 手機版專屬排版 (螢幕寬度小於 600px 時自動觸發) */
         @media (max-width: 600px) {
             body { padding: 10px; }
-            .header { 
-                flex-direction: column; 
-                align-items: stretch; 
-                gap: 15px; 
-            }
+            .header { flex-direction: column; align-items: stretch; gap: 15px; }
             h2 { font-size: 22px; text-align: center; }
             .add-btn { width: 100%; padding: 15px; font-size: 18px; }
-            .board { grid-template-columns: 1fr; /* 強制單欄排列 */ }
-            .task-detail { 
-                flex-direction: column; /* 將雇主跟移工拆成上下行，更好按 */
-                align-items: flex-start;
-                gap: 5px;
-            }
-            .block-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-            }
-            .block-header > div {
-                width: 100%;
-                display: flex;
-                justify-content: space-between;
-                align-items: center;
-            }
+            .board { grid-template-columns: 1fr; }
+            .task-detail { flex-direction: column; align-items: flex-start; gap: 5px; }
+            .block-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+            .block-header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; }
         }
     </style>
 </head>
@@ -245,6 +223,17 @@
         </div>
     </dialog>
 
+    <dialog id="linkModal">
+        <div class="modal-title">選擇要連動的案件</div>
+        <p style="font-size: 14px; color: #666; margin-top: 0;">將目前的案件與以下目標綁定，系統會自動用虛線框將它們組合在一起。</p>
+        <select id="linkTargetSelect">
+            </select>
+        <div class="modal-actions">
+            <button class="btn-cancel" onclick="document.getElementById('linkModal').close()">取消</button>
+            <button class="btn-save" onclick="saveLink()">確認連動</button>
+        </div>
+    </dialog>
+
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
@@ -267,38 +256,72 @@
         let currentEditBlockId = null;
         let currentEditTaskId = null;
         let currentEncodedProgress = null;
+        let globalData = {}; // 存放所有案件資料供連動選單使用
 
-        function getStatusClass(statusText) {
-            if(statusText.includes("準備中")) return "status-prepare";
-            if(statusText.includes("處理中")) return "status-process";
-            if(statusText.includes("卡關")) return "status-stuck";
-            if(statusText.includes("急件")) return "status-urgent";
-            if(statusText.includes("結案")) return "status-closed";
-            return "status-process"; 
+        // 取得狀態對應的顏色資訊
+        function getStatusInfo(statusText) {
+            if(statusText.includes("準備中")) return { class: "status-prepare", color: "#166534" };
+            if(statusText.includes("處理中")) return { class: "status-process", color: "#0369a1" };
+            if(statusText.includes("卡關")) return { class: "status-stuck", color: "#c2410c" };
+            if(statusText.includes("急件")) return { class: "status-urgent", color: "#b91c1c" };
+            if(statusText.includes("結案")) return { class: "status-closed", color: "#475569" };
+            return { class: "status-process", color: "#0369a1" }; 
         }
 
         onValue(blocksRef, (snapshot) => {
             const container = document.getElementById('boardContainer');
             container.innerHTML = ''; 
-            const data = snapshot.val();
-            if(data) {
-                Object.keys(data).forEach(blockId => renderBlock(blockId, data[blockId]));
-            } else {
+            globalData = snapshot.val() || {};
+            
+            if(Object.keys(globalData).length === 0) {
                 container.innerHTML = '<p style="color: #888;">目前沒有任何案件區塊，請點擊上方按鈕新增。</p>';
+                return;
             }
+
+            // 📍 核心邏輯：將擁有相同 groupId 的案件分組
+            const grouped = {};
+            Object.keys(globalData).forEach(id => {
+                const b = globalData[id];
+                const gId = b.groupId || id; // 如果沒有群組ID，自己就是一個群組
+                if(!grouped[gId]) grouped[gId] = [];
+                grouped[gId].push({ id, ...b });
+            });
+
+            // 渲染群組
+            Object.keys(grouped).forEach(gId => {
+                const groupArray = grouped[gId];
+                
+                if(groupArray.length > 1) {
+                    // 如果這個群組有多個案件，建立虛線外框
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'linked-group';
+                    wrapper.innerHTML = `<div class="linked-title">🔗 關聯連動案件群組</div>`;
+                    
+                    groupArray.forEach(blockData => {
+                        wrapper.appendChild(createBlockElement(blockData.id, blockData, true));
+                    });
+                    container.appendChild(wrapper);
+                } else {
+                    // 獨立案件，直接渲染
+                    container.appendChild(createBlockElement(groupArray[0].id, groupArray[0], false));
+                }
+            });
         });
 
-        function renderBlock(blockId, blockData) {
-            const container = document.getElementById('boardContainer');
+        // 建立單一卡片的函數
+        function createBlockElement(blockId, blockData, isGrouped) {
             const blockEl = document.createElement('div');
             blockEl.className = 'case-block';
             
+            // 🎨 動態設定卡片最上方的粗邊框顏色
+            const statusInfo = getStatusInfo(blockData.mainStatus);
+            blockEl.style.borderTopColor = statusInfo.color;
+
             let subTasksHtml = '';
             if(blockData.subTasks) {
                 Object.keys(blockData.subTasks).forEach(taskId => {
                     const task = blockData.subTasks[taskId];
                     let taskClass = task.type === '承接' ? 'transfer-in' : (task.type === '轉出' ? 'transfer-out' : '');
-                    
                     let progressString = task.progress || "尚未建立進度";
                     let progressLinesHtml = progressString.split('\n').map(line => `<div>${line}</div>`).join('');
                     let safeProgressData = encodeURIComponent(progressString);
@@ -322,25 +345,74 @@
                 });
             }
 
-            const statusClass = getStatusClass(blockData.mainStatus);
-            
+            // 判斷要顯示「連動按鈕」還是「解除按鈕」
+            let actionButtons = '';
+            if(isGrouped) {
+                actionButtons += `<button class="icon-btn" onclick="unlinkBlock('${blockId}')" title="解除連動，移出虛線框">✂️</button>`;
+            } else {
+                actionButtons += `<button class="icon-btn" onclick="openLinkModal('${blockId}')" title="與其他案件連動">🔗</button>`;
+            }
+            actionButtons += `<button class="icon-btn" style="color:#ef4444;" onclick="deleteBlock('${blockId}')" title="刪除案件">🗑️</button>`;
+
             blockEl.innerHTML = `
                 <div class="block-header">
                     <div class="block-title editable-text" onclick="updateField('/caseBlocks/${blockId}/blockTitle', '${blockData.blockTitle}', '修改區塊標題：')">
                         ${blockData.blockTitle} ✏️
                     </div>
                     <div>
-                        <span class="status-badge ${statusClass}" onclick="openStatusModal('${blockId}', '${blockData.mainStatus}')">
+                        <span class="status-badge ${statusInfo.class}" onclick="openStatusModal('${blockId}', '${blockData.mainStatus}')">
                             ${blockData.mainStatus} ⚙️
                         </span>
-                        <button class="delete-btn" onclick="deleteBlock('${blockId}')">🗑️</button>
+                        <div class="action-icons">${actionButtons}</div>
                     </div>
                 </div>
                 ${subTasksHtml}
             `;
-            container.appendChild(blockEl);
+            return blockEl;
         }
 
+        // --- 🔗 案件連動邏輯 ---
+        window.openLinkModal = function(blockId) {
+            currentEditBlockId = blockId;
+            const selectEl = document.getElementById('linkTargetSelect');
+            selectEl.innerHTML = '<option value="">-- 請選擇目標案件 --</option>';
+            
+            // 找出所有可以被連動的案件 (排除自己)
+            Object.keys(globalData).forEach(id => {
+                if(id !== blockId) {
+                    const title = globalData[id].blockTitle;
+                    selectEl.innerHTML += `<option value="${id}">${title}</option>`;
+                }
+            });
+            document.getElementById('linkModal').showModal();
+        };
+
+        window.saveLink = function() {
+            const targetId = document.getElementById('linkTargetSelect').value;
+            if(!targetId) { alert("請先選擇一個案件！"); return; }
+
+            // 取得目標案件的 groupId (如果沒有，就用它的 blockId)
+            const targetGroupId = globalData[targetId].groupId || targetId;
+            
+            const updates = {};
+            updates[`/caseBlocks/${currentEditBlockId}/groupId`] = targetGroupId;
+            // 確保目標案件也有同樣的 groupId，這樣它們就會被包在同一個虛線框裡
+            updates[`/caseBlocks/${targetId}/groupId`] = targetGroupId;
+
+            update(ref(db), updates).then(() => {
+                document.getElementById('linkModal').close();
+            });
+        };
+
+        window.unlinkBlock = function(blockId) {
+            if(confirm("確定要將此案件移出連動群組嗎？")) {
+                const updates = {};
+                updates[`/caseBlocks/${blockId}/groupId`] = null; // 清除群組 ID 即可獨立
+                update(ref(db), updates);
+            }
+        };
+
+        // --- 其他原有的 Modal 與更新邏輯 ---
         window.openStatusModal = function(blockId, currentStatus) {
             currentEditBlockId = blockId;
             document.getElementById('statusSelect').value = currentStatus;
@@ -349,9 +421,7 @@
 
         window.saveMainStatus = function() {
             const newStatus = document.getElementById('statusSelect').value;
-            const updates = {};
-            updates[`/caseBlocks/${currentEditBlockId}/mainStatus`] = newStatus;
-            update(ref(db), updates).then(() => {
+            update(ref(db), { [`/caseBlocks/${currentEditBlockId}/mainStatus`]: newStatus }).then(() => {
                 document.getElementById('statusModal').close();
             });
         };
@@ -360,7 +430,6 @@
             currentEditBlockId = blockId;
             currentEditTaskId = taskId;
             currentEncodedProgress = encodedProgress;
-            
             document.getElementById('progressSelect').value = ""; 
             document.getElementById('customNote').value = "";     
             document.getElementById('progressModal').showModal();
@@ -369,11 +438,7 @@
         window.saveProgress = function() {
             const selectedText = document.getElementById('progressSelect').value;
             const customNote = document.getElementById('customNote').value.trim();
-            
-            if(!selectedText && !customNote) {
-                alert("請至少選擇一個進度，或填寫自訂內容！");
-                return;
-            }
+            if(!selectedText && !customNote) { alert("請至少選擇一個進度，或填寫自訂內容！"); return; }
 
             let newStatusText = selectedText;
             if(selectedText === "自訂輸入") newStatusText = ""; 
@@ -384,16 +449,9 @@
             const dateString = `[${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}]`;
             const newEntry = `${dateString} ${newStatusText}`;
             
-            let finalProgress = "";
-            if(currentProgress.includes("尚未建立進度")) {
-                finalProgress = newEntry;
-            } else {
-                finalProgress = newEntry + "\n" + currentProgress;
-            }
+            let finalProgress = currentProgress.includes("尚未建立進度") ? newEntry : newEntry + "\n" + currentProgress;
 
-            const updates = {};
-            updates[`/caseBlocks/${currentEditBlockId}/subTasks/${currentEditTaskId}/progress`] = finalProgress;
-            update(ref(db), updates).then(() => {
+            update(ref(db), { [`/caseBlocks/${currentEditBlockId}/subTasks/${currentEditTaskId}/progress`]: finalProgress }).then(() => {
                 document.getElementById('progressModal').close();
             });
         };
@@ -401,8 +459,7 @@
         window.updateField = function(path, currentValue, promptMsg) {
             const newValue = prompt(promptMsg, currentValue);
             if(newValue && newValue.trim() !== "" && newValue !== currentValue) {
-                const updates = {}; updates[path] = newValue.trim();
-                update(ref(db), updates);
+                update(ref(db), { [path]: newValue.trim() });
             }
         };
 
@@ -412,7 +469,7 @@
 
         document.getElementById('addBlockBtn').addEventListener('click', () => {
             set(push(blocksRef), {
-                blockTitle: "新轉換承接專案", mainStatus: "🔵 處理中",
+                blockTitle: "新轉換承接專案", mainStatus: "🔵 處理中", groupId: null,
                 subTasks: {
                     t1: { type: "轉出", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" },
                     t2: { type: "承接", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" }
