@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>移工案件區塊化追蹤系統 - 雲端連線版</title>
+    <title>移工案件區塊化追蹤系統 - 全功能進化版</title>
     <style>
         :root {
             --primary-color: #4A90E2;
@@ -55,6 +55,10 @@
         .block-title {
             font-size: 18px;
             font-weight: bold;
+            cursor: pointer;
+        }
+        .block-title:hover {
+            color: var(--primary-color);
         }
         .status-badge {
             font-size: 12px;
@@ -62,6 +66,14 @@
             padding: 4px 8px;
             border-radius: 12px;
             color: #475569;
+        }
+        .delete-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #ef4444;
+            font-size: 16px;
+            margin-left: 10px;
         }
         .sub-task {
             background-color: #f9f9f9;
@@ -79,22 +91,19 @@
             font-size: 14px;
             margin-bottom: 8px;
         }
-        .edit-btn {
-            background: none;
-            border: 1px solid #ccc;
-            padding: 8px;
-            border-radius: 4px;
+        .editable-text {
             cursor: pointer;
-            font-size: 14px;
-            margin-top: 10px;
-            width: 100%;
+        }
+        .editable-text:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>📑 移工複雜案件追蹤看板 (即時同步)</h2>
+        <h2>📑 移工複雜案件追蹤看板 (全功能版)</h2>
         <button class="add-btn" id="addBlockBtn">+ 新增測試區塊</button>
     </div>
 
@@ -104,9 +113,9 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getDatabase, ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+        import { getDatabase, ref, onValue, push, set, update, remove } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // 整合您完整且正確的 Firebase 金鑰 (已更新為新加坡機房網址)
+        // 您的 Firebase 金鑰 (已確認可成功連線)
         const firebaseConfig = {
             apiKey: "AIzaSyBds2Qlh-ySODs716sNWSxbfK1smg5b-VI",
             authDomain: "adamtracking-832c3.firebaseapp.com",
@@ -149,15 +158,20 @@
                     const task = blockData.subTasks[taskId];
                     let taskClass = task.type === '承接' ? 'transfer-in' : (task.type === '轉出' ? 'transfer-out' : '');
                     
+                    // 將各欄位綁定 updateField 函數
                     subTasksHtml += `
                         <div class="sub-task ${taskClass}">
                             <div class="task-detail">
-                                <strong>${task.type}：${task.employerName}</strong>
-                                <span>移工：${task.workerName}</span>
+                                <strong class="editable-text" onclick="updateField('/caseBlocks/${blockId}/subTasks/${taskId}/employerName', '${task.employerName}', '請輸入新的【雇主】姓名：')">
+                                    ${task.type}：${task.employerName} ✏️
+                                </strong>
+                                <span class="editable-text" onclick="updateField('/caseBlocks/${blockId}/subTasks/${taskId}/workerName', '${task.workerName}', '請輸入新的【移工】姓名：')">
+                                    移工：${task.workerName} ✏️
+                                </span>
                             </div>
                             <div class="task-detail">
                                 <span>目前進度：</span>
-                                <span style="color: #0284c7; font-weight: bold; cursor:pointer;" onclick="updateProgress('${blockId}', '${taskId}', '${task.progress}')">
+                                <span class="editable-text" style="color: #0284c7; font-weight: bold;" onclick="updateField('/caseBlocks/${blockId}/subTasks/${taskId}/progress', '${task.progress}', '請輸入新的【進度狀態】：')">
                                     ${task.progress} ✏️
                                 </span>
                             </div>
@@ -166,42 +180,54 @@
                 });
             }
 
+            // 在標題右側加入狀態徽章與刪除垃圾桶
             blockEl.innerHTML = `
                 <div class="block-header">
-                    <div class="block-title">${blockData.blockTitle}</div>
-                    <span class="status-badge">${blockData.mainStatus}</span>
+                    <div class="block-title editable-text" onclick="updateField('/caseBlocks/${blockId}/blockTitle', '${blockData.blockTitle}', '請輸入新的【區塊標題】：')">
+                        ${blockData.blockTitle} ✏️
+                    </div>
+                    <div>
+                        <span class="status-badge">${blockData.mainStatus}</span>
+                        <button class="delete-btn" onclick="deleteBlock('${blockId}')" title="刪除此區塊">🗑️</button>
+                    </div>
                 </div>
                 ${subTasksHtml}
             `;
             container.appendChild(blockEl);
         }
 
-        // 3. 點擊進度文字時，修改特定子任務的進度
-        window.updateProgress = function(blockId, taskId, currentProgress) {
-            const newProgress = prompt("請輸入新的進度狀態：\n(例如：勞動部核發接續聘僱許可函)", currentProgress);
-            if(newProgress && newProgress !== currentProgress) {
+        // 3. 通用的更新資料庫函數 (標題、姓名、進度都共用這支)
+        window.updateField = function(path, currentValue, promptMsg) {
+            const newValue = prompt(promptMsg, currentValue);
+            // 只有在使用者有輸入，且內容有改變時才更新資料庫
+            if(newValue !== null && newValue.trim() !== "" && newValue !== currentValue) {
                 const updates = {};
-                updates['/caseBlocks/' + blockId + '/subTasks/' + taskId + '/progress'] = newProgress;
+                updates[path] = newValue.trim();
                 update(ref(db), updates)
-                    .then(() => console.log("進度已更新！"))
                     .catch((error) => alert("更新失敗：" + error));
             }
         };
 
-        // 4. 新增一筆測試區塊寫入資料庫
+        // 4. 刪除整個區塊的函數
+        window.deleteBlock = function(blockId) {
+            if(confirm("⚠️ 確定要刪除整個案件區塊嗎？刪除後將無法復原。")) {
+                remove(ref(db, 'caseBlocks/' + blockId))
+                    .catch((error) => alert("刪除失敗：" + error));
+            }
+        };
+
+        // 5. 新增一筆測試區塊寫入資料庫
         document.getElementById('addBlockBtn').addEventListener('click', () => {
             const newBlockRef = push(blocksRef);
             set(newBlockRef, {
-                blockTitle: "新轉換承接專案 (測試)",
+                blockTitle: "新轉換承接專案 (點擊標題修改)",
                 mainStatus: "處理中",
                 subTasks: {
-                    t1: { type: "轉出", employerName: "王原雇主", workerName: "阿蒂", progress: "勞工局發函中" },
-                    t2: { type: "承接", employerName: "李新雇主", workerName: "阿蒂", progress: "等待接續通報" }
+                    t1: { type: "轉出", employerName: "點此修改雇主", workerName: "點此修改移工", progress: "點此修改進度" },
+                    t2: { type: "承接", employerName: "點此修改雇主", workerName: "點此修改移工", progress: "等待接續通報" }
                 }
-            }).then(() => {
-                console.log("新增測試區塊成功！");
             }).catch((error) => {
-                alert("寫入失敗，請確認 Firebase 規則(Rules)是否已設定為 true。錯誤訊息：" + error);
+                alert("新增失敗：" + error);
             });
         });
     </script>
