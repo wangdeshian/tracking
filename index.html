@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>移工案件區塊化追蹤系統 - 視覺預覽版</title>
+    <title>移工案件區塊化追蹤系統 - 雲端連線版</title>
     <style>
         :root {
             --primary-color: #4A90E2;
@@ -31,10 +31,6 @@
             border-radius: var(--border-radius);
             cursor: pointer;
             font-size: 16px;
-            transition: background 0.3s;
-        }
-        .add-btn:hover {
-            background-color: #357ABD;
         }
         .board {
             display: grid;
@@ -83,9 +79,6 @@
             font-size: 14px;
             margin-bottom: 8px;
         }
-        .task-detail:last-child {
-            margin-bottom: 0;
-        }
         .edit-btn {
             background: none;
             border: 1px solid #ccc;
@@ -95,114 +88,123 @@
             font-size: 14px;
             margin-top: 10px;
             width: 100%;
-            transition: background 0.2s;
-        }
-        .edit-btn:hover {
-            background-color: #f1f5f9;
         }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h2>📑 複雜案件追蹤看板 (預覽模式)</h2>
-        <button class="add-btn" onclick="alert('視覺預覽版：此按鈕未來將會新增一個空白區塊')">+ 新增關聯區塊</button>
+        <h2>📑 移工複雜案件追蹤看板 (即時同步)</h2>
+        <button class="add-btn" id="addBlockBtn">+ 新增測試區塊</button>
     </div>
 
     <div class="board" id="boardContainer">
-        </div>
+        <p style="color: #888;">正在連線至 Firebase 載入資料...</p>
+    </div>
 
-    <script>
-        // 模擬 Firebase 讀取到的資料結構
-        const mockData = {
-            "block_001": {
-                "blockTitle": "王阿姨承接與李先生轉出案",
-                "mainStatus": "處理中",
-                "subTasks": {
-                    "task_1": {
-                        "type": "轉出",
-                        "employerName": "李先生",
-                        "workerName": "Wati (阿蒂)",
-                        "progress": "勞工局發函中"
-                    },
-                    "task_2": {
-                        "type": "承接",
-                        "employerName": "王阿姨",
-                        "workerName": "Wati (阿蒂)",
-                        "progress": "等待接續通報"
-                    }
-                }
-            },
-            "block_002": {
-                "blockTitle": "張公館急件承接專案",
-                "mainStatus": "即將結案",
-                "subTasks": {
-                    "task_1": {
-                        "type": "轉出",
-                        "employerName": "林太太",
-                        "workerName": "Siti (西蒂)",
-                        "progress": "廢聘函已核發"
-                    },
-                    "task_2": {
-                        "type": "承接",
-                        "employerName": "張先生",
-                        "workerName": "Siti (西蒂)",
-                        "progress": "三方合約已簽署"
-                    },
-                    "task_3": {
-                        "type": "其他",
-                        "employerName": "仲介端",
-                        "workerName": "Siti (西蒂)",
-                        "progress": "安排體檢與住宿確認"
-                    }
-                }
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        // 整合您的 Firebase 金鑰，並補上 Realtime Database 必備的 databaseURL
+        const firebaseConfig = {
+            apiKey: "AIzaSyBds2Qlh-ySODs716sNWSxbfK1smg5b-VI",
+            authDomain: "adamtracking-832c3.firebaseapp.com",
+            projectId: "adamtracking-832c3",
+            storageBucket: "adamtracking-832c3.firebasestorage.app",
+            messagingSenderId: "944450999714",
+            appId: "1:944450999714:web:f25545cd4c36b3b6f5cefb",
+            measurementId: "G-TETKPD01G2",
+            // 系統自動推導的資料庫網址 (非常重要，沒有這行無法寫入資料)
+            databaseURL: "https://adamtracking-832c3-default-rtdb.firebaseio.com" 
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        const blocksRef = ref(db, 'caseBlocks');
+
+        // 1. 監聽資料庫變化，自動渲染畫面
+        onValue(blocksRef, (snapshot) => {
+            const container = document.getElementById('boardContainer');
+            container.innerHTML = ''; 
+            
+            const data = snapshot.val();
+            if(data) {
+                Object.keys(data).forEach(blockId => {
+                    renderBlock(blockId, data[blockId]);
+                });
+            } else {
+                container.innerHTML = '<p style="color: #888;">目前沒有任何案件區塊，請點擊右上方新增。</p>';
+            }
+        });
+
+        // 2. 渲染單一區塊的函數
+        function renderBlock(blockId, blockData) {
+            const container = document.getElementById('boardContainer');
+            const blockEl = document.createElement('div');
+            blockEl.className = 'case-block';
+            
+            let subTasksHtml = '';
+            if(blockData.subTasks) {
+                Object.keys(blockData.subTasks).forEach(taskId => {
+                    const task = blockData.subTasks[taskId];
+                    let taskClass = task.type === '承接' ? 'transfer-in' : (task.type === '轉出' ? 'transfer-out' : '');
+                    
+                    subTasksHtml += `
+                        <div class="sub-task ${taskClass}">
+                            <div class="task-detail">
+                                <strong>${task.type}：${task.employerName}</strong>
+                                <span>移工：${task.workerName}</span>
+                            </div>
+                            <div class="task-detail">
+                                <span>目前進度：</span>
+                                <span style="color: #0284c7; font-weight: bold; cursor:pointer;" onclick="updateProgress('${blockId}', '${taskId}', '${task.progress}')">
+                                    ${task.progress} ✏️
+                                </span>
+                            </div>
+                        </div>
+                    `;
+                });
+            }
+
+            blockEl.innerHTML = `
+                <div class="block-header">
+                    <div class="block-title">${blockData.blockTitle}</div>
+                    <span class="status-badge">${blockData.mainStatus}</span>
+                </div>
+                ${subTasksHtml}
+            `;
+            container.appendChild(blockEl);
+        }
+
+        // 3. 點擊進度文字時，修改特定子任務的進度
+        window.updateProgress = function(blockId, taskId, currentProgress) {
+            const newProgress = prompt("請輸入新的進度狀態：\n(例如：勞動部核發接續聘僱許可函)", currentProgress);
+            if(newProgress && newProgress !== currentProgress) {
+                const updates = {};
+                updates['/caseBlocks/' + blockId + '/subTasks/' + taskId + '/progress'] = newProgress;
+                update(ref(db), updates)
+                    .then(() => console.log("進度已更新！"))
+                    .catch((error) => alert("更新失敗：" + error));
             }
         };
 
-        // 網頁載入後立即執行渲染
-        window.onload = function() {
-            const container = document.getElementById('boardContainer');
-            
-            Object.keys(mockData).forEach(blockId => {
-                const blockData = mockData[blockId];
-                const blockEl = document.createElement('div');
-                blockEl.className = 'case-block';
-                
-                let subTasksHtml = '';
-                if(blockData.subTasks) {
-                    Object.keys(blockData.subTasks).forEach(taskId => {
-                        const task = blockData.subTasks[taskId];
-                        // 根據類型決定左側邊框顏色
-                        let taskClass = '';
-                        if(task.type === '承接') taskClass = 'transfer-in';
-                        else if(task.type === '轉出') taskClass = 'transfer-out';
-
-                        subTasksHtml += `
-                            <div class="sub-task ${taskClass}">
-                                <div class="task-detail">
-                                    <strong>${task.type}：${task.employerName}</strong>
-                                    <span>移工：${task.workerName}</span>
-                                </div>
-                                <div class="task-detail">
-                                    <span>目前進度：</span>
-                                    <span style="color: #0284c7; font-weight: bold;">${task.progress}</span>
-                                </div>
-                            </div>
-                        `;
-                    });
+        // 4. 新增一筆測試區塊寫入資料庫
+        document.getElementById('addBlockBtn').addEventListener('click', () => {
+            const newBlockRef = push(blocksRef);
+            set(newBlockRef, {
+                blockTitle: "新轉換承接專案 (測試)",
+                mainStatus: "處理中",
+                subTasks: {
+                    t1: { type: "轉出", employerName: "王原雇主", workerName: "阿蒂", progress: "勞工局發函中" },
+                    t2: { type: "承接", employerName: "李新雇主", workerName: "阿蒂", progress: "等待接續通報" }
                 }
-
-                blockEl.innerHTML = `
-                    <div class="block-header">
-                        <div class="block-title">${blockData.blockTitle}</div>
-                        <span class="status-badge">${blockData.mainStatus}</span>
-                    </div>
-                    ${subTasksHtml}
-                    <button class="edit-btn" onclick="alert('視覺預覽版：未來點擊這裡會彈出可修改進度的視窗！')">✏️ 編輯此區塊內容</button>
-                `;
-                container.appendChild(blockEl);
+            }).then(() => {
+                console.log("新增測試區塊成功！");
+            }).catch((error) => {
+                alert("寫入失敗，請確認 Firebase 規則(Rules)是否已設定為 true。錯誤訊息：" + error);
             });
-        };
+        });
     </script>
 </body>
 </html>
