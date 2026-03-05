@@ -106,7 +106,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getDatabase, ref, onValue, push, set, update } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-        // 整合您的 Firebase 金鑰，並補上 Realtime Database 必備的 databaseURL
+        // 整合您完整且正確的 Firebase 金鑰 (已更新為新加坡機房網址)
         const firebaseConfig = {
             apiKey: "AIzaSyBds2Qlh-ySODs716sNWSxbfK1smg5b-VI",
             authDomain: "adamtracking-832c3.firebaseapp.com",
@@ -115,8 +115,7 @@
             messagingSenderId: "944450999714",
             appId: "1:944450999714:web:f25545cd4c36b3b6f5cefb",
             measurementId: "G-TETKPD01G2",
-            // 系統自動推導的資料庫網址 (非常重要，沒有這行無法寫入資料)
-            databaseURL: "https://adamtracking-832c3-default-rtdb.firebaseio.com" 
+            databaseURL: "https://adamtracking-832c3-default-rtdb.asia-southeast1.firebasedatabase.app/" 
         };
 
         const app = initializeApp(firebaseConfig);
