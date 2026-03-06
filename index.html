@@ -363,3 +363,111 @@
                         <span class="status-badge ${statusInfo.class}" onclick="openStatusModal('${blockId}', '${blockData.mainStatus}')">
                             ${blockData.mainStatus} ⚙️
                         </span>
+                        <div class="action-icons">${actionButtons}</div>
+                    </div>
+                </div>
+                ${subTasksHtml}
+            `;
+            return blockEl;
+        }
+
+        window.openLinkModal = function(blockId) {
+            currentEditBlockId = blockId;
+            const selectEl = document.getElementById('linkTargetSelect');
+            selectEl.innerHTML = '<option value="">-- 請選擇目標案件 --</option>';
+            
+            Object.keys(globalData).forEach(id => {
+                if(id !== blockId) {
+                    const title = globalData[id].blockTitle;
+                    selectEl.innerHTML += `<option value="${id}">${title}</option>`;
+                }
+            });
+            document.getElementById('linkModal').showModal();
+        };
+
+        window.saveLink = function() {
+            const targetId = document.getElementById('linkTargetSelect').value;
+            if(!targetId) { alert("請先選擇一個案件！"); return; }
+            const targetGroupId = globalData[targetId].groupId || targetId;
+            const updates = {};
+            updates[`/caseBlocks/${currentEditBlockId}/groupId`] = targetGroupId;
+            updates[`/caseBlocks/${targetId}/groupId`] = targetGroupId;
+            update(ref(db), updates).then(() => { document.getElementById('linkModal').close(); });
+        };
+
+        window.unlinkBlock = function(blockId) {
+            if(confirm("確定要將此案件移出連動群組嗎？")) {
+                update(ref(db), { [`/caseBlocks/${blockId}/groupId`]: null });
+            }
+        };
+
+        window.openStatusModal = function(blockId, currentStatus) {
+            currentEditBlockId = blockId;
+            document.getElementById('statusSelect').value = currentStatus;
+            document.getElementById('statusModal').showModal();
+        };
+
+        window.saveMainStatus = function() {
+            const newStatus = document.getElementById('statusSelect').value;
+            update(ref(db), { [`/caseBlocks/${currentEditBlockId}/mainStatus`]: newStatus }).then(() => {
+                document.getElementById('statusModal').close();
+            });
+        };
+
+        window.openProgressModal = function(blockId, taskId, encodedProgress) {
+            currentEditBlockId = blockId;
+            currentEditTaskId = taskId;
+            currentEncodedProgress = encodedProgress;
+            document.getElementById('progressSelect').value = ""; 
+            document.getElementById('customNote').value = "";     
+            document.getElementById('progressModal').showModal();
+        };
+
+        window.saveProgress = function() {
+            const selectedText = document.getElementById('progressSelect').value;
+            const customNote = document.getElementById('customNote').value.trim();
+            if(!selectedText && !customNote) { alert("請至少選擇一個進度，或填寫自訂內容！"); return; }
+
+            let newStatusText = selectedText;
+            if(selectedText === "自訂輸入") newStatusText = ""; 
+            if(customNote) newStatusText += (newStatusText ? " - " : "") + customNote;
+
+            const currentProgress = decodeURIComponent(currentEncodedProgress);
+            const today = new Date();
+            const dateString = `[${(today.getMonth() + 1).toString().padStart(2, '0')}/${today.getDate().toString().padStart(2, '0')}]`;
+            const newEntry = `${dateString} ${newStatusText}`;
+            
+            let finalProgress = currentProgress.includes("尚未建立進度") ? newEntry : newEntry + "\n" + currentProgress;
+
+            update(ref(db), { [`/caseBlocks/${currentEditBlockId}/subTasks/${currentEditTaskId}/progress`]: finalProgress }).then(() => {
+                document.getElementById('progressModal').close();
+            });
+        };
+
+        window.updateField = function(path, currentValue, promptMsg) {
+            const newValue = prompt(promptMsg, currentValue);
+            if(newValue && newValue.trim() !== "" && newValue !== currentValue) {
+                update(ref(db), { [path]: newValue.trim() });
+            }
+        };
+
+        window.deleteBlock = function(blockId) {
+            if(confirm("⚠️ 確定要刪除整個案件區塊嗎？")) remove(ref(db, 'caseBlocks/' + blockId));
+        };
+
+        document.getElementById('addBlockBtn').addEventListener('click', () => {
+            // 新增卡片時，自動把它排到最下面
+            let maxOrder = 0;
+            Object.values(globalData).forEach(b => { if((b.orderIndex||0) > maxOrder) maxOrder = b.orderIndex; });
+            
+            set(push(blocksRef), {
+                blockTitle: "新轉換承接專案", mainStatus: "🔵 處理中", groupId: null, orderIndex: maxOrder + 1,
+                subTasks: {
+                    t1: { type: "轉出", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" },
+                    t2: { type: "承接", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" }
+                }
+            });
+        });
+    </script>
+</body>
+</html>
