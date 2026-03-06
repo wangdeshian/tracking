@@ -19,11 +19,23 @@
             margin: 0;
             color: #333;
         }
+        
+        /* 🚀 這次升級的關鍵：置頂控制面板 */
+        .sticky-container {
+            position: sticky;
+            top: 0;
+            background-color: var(--bg-color); /* 與網頁底色相同，確保完美融合 */
+            z-index: 1000; /* 確保它永遠浮在最上層 */
+            padding: 20px 20px 5px 20px;
+            margin: -20px -20px 15px -20px;
+            border-bottom: 1px solid #e2e8f0; /* 加一條淡淡的底線增加立體感 */
+        }
+
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; font-size: 24px; color: #1e293b; }
-        .add-btn { background-color: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: var(--border-radius); cursor: pointer; font-size: 16px; font-weight: bold; }
+        .add-btn { background-color: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: var(--border-radius); cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(74,144,226,0.3); }
         
-        .search-bar { width: 100%; padding: 14px 15px; margin-bottom: 25px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+        .search-bar { width: 100%; padding: 14px 15px; margin-bottom: 10px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .search-bar:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2); }
 
         .board { 
@@ -74,8 +86,13 @@
         .btn-cancel { background: #f1f5f9; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
         .btn-save { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
 
+        /* 手機版專屬置頂調整 */
         @media (max-width: 600px) {
             body { padding: 10px; }
+            .sticky-container {
+                padding: 15px 10px 10px 10px;
+                margin: -10px -10px 15px -10px;
+            }
             .header { flex-direction: column; align-items: stretch; gap: 15px; }
             h2 { font-size: 20px; text-align: center; }
             .add-btn { width: 100%; padding: 15px; font-size: 18px; }
@@ -85,25 +102,19 @@
             .block-header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; }
         }
         
-        /* 🚀 這次升級的關鍵：讓卡片在拖曳時「浮空放大」，手感更好 */
         .sortable-ghost { opacity: 0.2; background-color: #e2e8f0; }
-        .sortable-drag { 
-            opacity: 1 !important; 
-            transform: scale(1.03); 
-            box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important; 
-            cursor: grabbing !important;
-            z-index: 9999;
-        }
+        .sortable-drag { opacity: 1 !important; transform: scale(1.03); box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important; cursor: grabbing !important; z-index: 9999; }
     </style>
 </head>
 <body>
 
-    <div class="header">
-        <h2>📑 得賢引才 - 預計承接轉換紀錄</h2>
-        <button class="add-btn" id="addBlockBtn">+ 新增案件</button>
+    <div class="sticky-container">
+        <div class="header">
+            <h2>📑 得賢引才 - 預計承接轉換紀錄</h2>
+            <button class="add-btn" id="addBlockBtn">+ 新增案件</button>
+        </div>
+        <input type="text" id="searchInput" class="search-bar" placeholder="🔍 輸入關鍵字搜尋（雇主、移工姓名、標題或進度）...">
     </div>
-
-    <input type="text" id="searchInput" class="search-bar" placeholder="🔍 輸入關鍵字搜尋（雇主、移工姓名、標題或進度）...">
 
     <div class="board" id="boardContainer">
         <p style="color: #888;">正在連線至 Firebase 載入資料...</p>
@@ -288,9 +299,9 @@
                 animation: 200,
                 handle: '.drag-handle', 
                 ghostClass: 'sortable-ghost',
-                dragClass: 'sortable-drag', // 🚀 啟動浮空樣式
-                forceFallback: true,        // 🚀 強制讓拖曳元素脫離網格限制，手感更滑順
-                fallbackOnBody: true,       // 🚀 允許跨越整個螢幕拖曳
+                dragClass: 'sortable-drag', 
+                forceFallback: true,        
+                fallbackOnBody: true,       
                 onEnd: function () {
                     const updates = {};
                     const allBlocks = document.querySelectorAll('#boardContainer > div');
@@ -473,6 +484,8 @@
                     t2: { type: "承接", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" }
                 }
             });
+            // 貼心小功能：按新增後自動滑回最上面，讓您能馬上看到新卡片
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     </script>
 </body>
