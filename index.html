@@ -26,7 +26,13 @@
         .search-bar { width: 100%; padding: 14px 15px; margin-bottom: 25px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .search-bar:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2); }
 
-        .board { display: flex; flex-direction: column; gap: 20px; } /* 改為垂直排列以利拖曳 */
+        /* 🎨 恢復完美比例：改回 Grid 網格排列，讓卡片大小適中並可左右並排 */
+        .board { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
+            gap: 20px; 
+            align-items: start; 
+        }
         
         .linked-group { border: 2px dashed #94a3b8; border-radius: 12px; padding: 15px; background-color: #f8fafc; display: flex; flex-direction: column; gap: 15px; }
         .linked-title { font-size: 14px; font-weight: bold; color: #64748b; display: flex; align-items: center; gap: 5px; }
@@ -34,15 +40,8 @@
         .case-block { background-color: var(--card-bg); border-radius: var(--border-radius); padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid var(--primary-color); background-color: #fff; }
         .block-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         
-        /* ✋ 拖曳把手專屬樣式 */
-        .drag-handle { 
-            cursor: grab; 
-            font-size: 22px; 
-            color: #94a3b8; 
-            margin-right: 10px; 
-            padding: 0 10px 0 0; 
-            user-select: none;
-        }
+        /* 拖曳把手專屬樣式 */
+        .drag-handle { cursor: grab; font-size: 22px; color: #94a3b8; margin-right: 10px; padding: 0 10px 0 0; user-select: none; }
         .drag-handle:active { cursor: grabbing; color: var(--primary-color); }
         .block-title { font-size: 18px; font-weight: bold; display: flex; align-items: center; }
         
@@ -77,11 +76,13 @@
         .btn-cancel { background: #f1f5f9; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
         .btn-save { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
 
+        /* 手機版專屬排版 (自動變回單欄滿版) */
         @media (max-width: 600px) {
             body { padding: 10px; }
             .header { flex-direction: column; align-items: stretch; gap: 15px; }
             h2 { font-size: 20px; text-align: center; }
             .add-btn { width: 100%; padding: 15px; font-size: 18px; }
+            .board { grid-template-columns: 1fr; }
             .task-detail { flex-direction: column; align-items: flex-start; gap: 5px; }
             .block-header { flex-direction: column; align-items: flex-start; gap: 10px; }
             .block-header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; }
@@ -187,7 +188,7 @@
         let currentEncodedProgress = null;
         let globalData = {}; 
         let currentSearchText = ""; 
-        let sortableInstance = null; // 存放排序引擎
+        let sortableInstance = null; 
 
         function getStatusInfo(statusText) {
             if(statusText.includes("準備中")) return { class: "status-prepare", color: "#166534" };
@@ -217,7 +218,6 @@
                 return;
             }
 
-            // 1. 將資料分組並取出最小排序值 (為了照您的自訂順序排列)
             const groups = {};
             Object.keys(globalData).forEach(id => {
                 const b = globalData[id];
@@ -228,14 +228,12 @@
                 if(order < groups[gId].minOrder) groups[gId].minOrder = order;
             });
 
-            // 2. 依照順序排列群組
             const sortedGroups = Object.values(groups).sort((a, b) => a.minOrder - b.minOrder);
             let hasVisibleCases = false;
 
             sortedGroups.forEach(groupData => {
                 const groupArray = groupData.items;
                 
-                // 搜尋過濾
                 const groupMatchesSearch = groupArray.some(blockData => {
                     if(!currentSearchText) return true; 
                     const titleMatch = blockData.blockTitle && blockData.blockTitle.toLowerCase().includes(currentSearchText);
@@ -254,13 +252,11 @@
 
                 if(groupMatchesSearch) {
                     hasVisibleCases = true;
-                    // 群組內部也依照順序排好
                     groupArray.sort((a, b) => (a.orderIndex || 0) - (b.orderIndex || 0));
 
                     if(groupArray.length > 1) {
                         const wrapper = document.createElement('div');
                         wrapper.className = 'linked-group';
-                        // 加入拖曳把手
                         wrapper.innerHTML = `<div class="linked-title"><span class="drag-handle" title="按住拖曳群組">≡</span>🔗 關聯連動案件群組</div>`;
                         groupArray.forEach(blockData => {
                             wrapper.appendChild(createBlockElement(blockData.id, blockData, true));
@@ -276,27 +272,33 @@
                 container.innerHTML = `<p style="color: #888;">找不到包含「<b>${currentSearchText}</b>」的案件。</p>`;
             }
 
-            // 啟動拖曳排序引擎
             initSortable();
         }
 
-        // 啟動 SortableJS
         function initSortable() {
             const container = document.getElementById('boardContainer');
-            if(sortableInstance) sortableInstance.destroy(); // 避免重複綁定
+            if(sortableInstance) sortableInstance.destroy(); 
             
             sortableInstance = new Sortable(container, {
                 animation: 150,
-                handle: '.drag-handle', // 關鍵：只有按住 ≡ 才能拖曳
+                handle: '.drag-handle', 
                 ghostClass: 'sortable-ghost',
                 onEnd: function () {
-                    // 放開滑鼠的瞬間，自動計算畫面上所有卡片的新順序並存入資料庫
                     const updates = {};
-                    const allBlocks = document.querySelectorAll('.case-block');
+                    const allBlocks = document.querySelectorAll('#boardContainer > div');
                     allBlocks.forEach((blockEl, index) => {
-                        const id = blockEl.getAttribute('data-id');
-                        if (id) {
-                            updates[`/caseBlocks/${id}/orderIndex`] = index;
+                        // 處理獨立卡片
+                        if(blockEl.classList.contains('case-block')) {
+                            const id = blockEl.getAttribute('data-id');
+                            if (id) updates[`/caseBlocks/${id}/orderIndex`] = index;
+                        } 
+                        // 處理群組內的卡片，讓群組內所有卡片的 orderIndex 一致，確保下次讀取排序正確
+                        else if(blockEl.classList.contains('linked-group')) {
+                            const innerBlocks = blockEl.querySelectorAll('.case-block');
+                            innerBlocks.forEach(innerEl => {
+                                const id = innerEl.getAttribute('data-id');
+                                if (id) updates[`/caseBlocks/${id}/orderIndex`] = index;
+                            });
                         }
                     });
                     update(ref(db), updates).catch(err => console.error("排序失敗:", err));
@@ -307,7 +309,7 @@
         function createBlockElement(blockId, blockData, isGrouped) {
             const blockEl = document.createElement('div');
             blockEl.className = 'case-block';
-            blockEl.setAttribute('data-id', blockId); // 標記 ID 供排序讀取
+            blockEl.setAttribute('data-id', blockId); 
             
             const statusInfo = getStatusInfo(blockData.mainStatus);
             blockEl.style.borderTopColor = statusInfo.color;
@@ -348,7 +350,6 @@
             }
             actionButtons += `<button class="icon-btn" style="color:#ef4444;" onclick="deleteBlock('${blockId}')" title="刪除案件">🗑️</button>`;
 
-            // 加入 ≡ 拖曳把手 (如果是獨立卡片才顯示，群組則顯示在最外層)
             const handleHtml = isGrouped ? '' : `<span class="drag-handle" title="按住拖曳排序">≡</span>`;
 
             blockEl.innerHTML = `
@@ -456,7 +457,6 @@
         };
 
         document.getElementById('addBlockBtn').addEventListener('click', () => {
-            // 新增卡片時，自動把它排到最下面
             let maxOrder = 0;
             Object.values(globalData).forEach(b => { if((b.orderIndex||0) > maxOrder) maxOrder = b.orderIndex; });
             
