@@ -26,7 +26,6 @@
         .search-bar { width: 100%; padding: 14px 15px; margin-bottom: 25px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .search-bar:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2); }
 
-        /* 🎨 恢復完美比例：改回 Grid 網格排列，讓卡片大小適中並可左右並排 */
         .board { 
             display: grid; 
             grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); 
@@ -40,7 +39,6 @@
         .case-block { background-color: var(--card-bg); border-radius: var(--border-radius); padding: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-top: 5px solid var(--primary-color); background-color: #fff; }
         .block-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; }
         
-        /* 拖曳把手專屬樣式 */
         .drag-handle { cursor: grab; font-size: 22px; color: #94a3b8; margin-right: 10px; padding: 0 10px 0 0; user-select: none; }
         .drag-handle:active { cursor: grabbing; color: var(--primary-color); }
         .block-title { font-size: 18px; font-weight: bold; display: flex; align-items: center; }
@@ -76,7 +74,6 @@
         .btn-cancel { background: #f1f5f9; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
         .btn-save { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
 
-        /* 手機版專屬排版 (自動變回單欄滿版) */
         @media (max-width: 600px) {
             body { padding: 10px; }
             .header { flex-direction: column; align-items: stretch; gap: 15px; }
@@ -87,8 +84,16 @@
             .block-header { flex-direction: column; align-items: flex-start; gap: 10px; }
             .block-header > div { width: 100%; display: flex; justify-content: space-between; align-items: center; }
         }
-        /* 拖曳時的陰影與動畫 */
-        .sortable-ghost { opacity: 0.4; background-color: #f1f5f9; border: 2px dashed #94a3b8; }
+        
+        /* 🚀 這次升級的關鍵：讓卡片在拖曳時「浮空放大」，手感更好 */
+        .sortable-ghost { opacity: 0.2; background-color: #e2e8f0; }
+        .sortable-drag { 
+            opacity: 1 !important; 
+            transform: scale(1.03); 
+            box-shadow: 0 15px 30px rgba(0,0,0,0.15) !important; 
+            cursor: grabbing !important;
+            z-index: 9999;
+        }
     </style>
 </head>
 <body>
@@ -280,19 +285,20 @@
             if(sortableInstance) sortableInstance.destroy(); 
             
             sortableInstance = new Sortable(container, {
-                animation: 150,
+                animation: 200,
                 handle: '.drag-handle', 
                 ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag', // 🚀 啟動浮空樣式
+                forceFallback: true,        // 🚀 強制讓拖曳元素脫離網格限制，手感更滑順
+                fallbackOnBody: true,       // 🚀 允許跨越整個螢幕拖曳
                 onEnd: function () {
                     const updates = {};
                     const allBlocks = document.querySelectorAll('#boardContainer > div');
                     allBlocks.forEach((blockEl, index) => {
-                        // 處理獨立卡片
                         if(blockEl.classList.contains('case-block')) {
                             const id = blockEl.getAttribute('data-id');
                             if (id) updates[`/caseBlocks/${id}/orderIndex`] = index;
                         } 
-                        // 處理群組內的卡片，讓群組內所有卡片的 orderIndex 一致，確保下次讀取排序正確
                         else if(blockEl.classList.contains('linked-group')) {
                             const innerBlocks = blockEl.querySelectorAll('.case-block');
                             innerBlocks.forEach(innerEl => {
