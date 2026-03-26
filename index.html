@@ -20,15 +20,14 @@
             color: #333;
         }
         
-        /* 🚀 這次升級的關鍵：置頂控制面板 */
         .sticky-container {
             position: sticky;
             top: 0;
-            background-color: var(--bg-color); /* 與網頁底色相同，確保完美融合 */
-            z-index: 1000; /* 確保它永遠浮在最上層 */
+            background-color: var(--bg-color); 
+            z-index: 1000; 
             padding: 20px 20px 5px 20px;
             margin: -20px -20px 15px -20px;
-            border-bottom: 1px solid #e2e8f0; /* 加一條淡淡的底線增加立體感 */
+            border-bottom: 1px solid #e2e8f0; 
         }
 
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
@@ -86,7 +85,6 @@
         .btn-cancel { background: #f1f5f9; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
         .btn-save { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
 
-        /* 手機版專屬置頂調整 */
         @media (max-width: 600px) {
             body { padding: 10px; }
             .sticky-container {
@@ -477,15 +475,20 @@
             let maxOrder = 0;
             Object.values(globalData).forEach(b => { if((b.orderIndex||0) > maxOrder) maxOrder = b.orderIndex; });
             
-            set(push(blocksRef), {
+            // 將資料寫入 Firebase
+            const newBlockRef = push(blocksRef);
+            set(newBlockRef, {
                 blockTitle: "新轉換承接專案", mainStatus: "🔵 處理中", groupId: null, orderIndex: maxOrder + 1,
                 subTasks: {
                     t1: { type: "轉出", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" },
                     t2: { type: "承接", employerName: "待修改", workerName: "待修改", progress: "尚未建立進度" }
                 }
+            }).then(() => {
+                // 🚀 關鍵修正：給系統 0.3 秒把卡片長出來，然後自動平滑滾動到網頁最下方
+                setTimeout(() => {
+                    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }, 300);
             });
-            // 貼心小功能：按新增後自動滑回最上面，讓您能馬上看到新卡片
-            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     </script>
 </body>
