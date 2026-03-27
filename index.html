@@ -33,12 +33,32 @@
         .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         h2 { margin: 0; font-size: 24px; color: #1e293b; }
         
-        /* 🚀 這次升級的關鍵：按鈕群組排版 */
         .header-actions { display: flex; gap: 10px; align-items: center; }
         
         .add-btn { background-color: var(--primary-color); color: white; border: none; padding: 12px 20px; border-radius: var(--border-radius); cursor: pointer; font-size: 16px; font-weight: bold; box-shadow: 0 2px 4px rgba(74,144,226,0.3); }
-        .toggle-btn { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; padding: 11px 15px; border-radius: var(--border-radius); cursor: pointer; font-size: 15px; font-weight: bold; transition: all 0.2s; }
-        .toggle-btn:hover { background-color: #e2e8f0; }
+        
+        /* 🚀 這次升級的關鍵：美化的核取方塊區塊 */
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            background-color: #f8fafc;
+            border: 1px solid #cbd5e1;
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: bold;
+            color: #475569;
+            user-select: none;
+            transition: all 0.2s;
+        }
+        .checkbox-container:hover { background-color: #e2e8f0; }
+        .checkbox-container input[type="checkbox"] {
+            margin-right: 8px;
+            cursor: pointer;
+            width: 16px;
+            height: 16px;
+        }
 
         .search-bar { width: 100%; padding: 14px 15px; margin-bottom: 10px; border: 2px solid #cbd5e1; border-radius: 8px; font-size: 16px; box-sizing: border-box; background-color: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
         .search-bar:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 2px 8px rgba(74, 144, 226, 0.2); }
@@ -86,16 +106,15 @@
         .btn-cancel { background: #f1f5f9; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
         .btn-save { background: var(--primary-color); color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: bold;}
 
-        /* 手機版專屬置頂與並排調整 */
+        /* 手機版排版調整 */
         @media (max-width: 600px) {
             body { padding: 10px; }
             .sticky-container { padding: 15px 10px 10px 10px; margin: -10px -10px 15px -10px; }
             .header { flex-direction: column; align-items: stretch; gap: 15px; }
             h2 { font-size: 20px; text-align: center; }
             
-            /* 在手機上讓兩顆按鈕左右並排 */
             .header-actions { display: flex; flex-direction: row; width: 100%; gap: 10px; }
-            .add-btn, .toggle-btn { flex: 1; padding: 12px 5px; font-size: 15px; text-align: center; }
+            .add-btn, .checkbox-container { flex: 1; padding: 12px 5px; font-size: 15px; text-align: center; justify-content: center; }
             
             .board { grid-template-columns: 1fr; }
             .task-detail { flex-direction: column; align-items: flex-start; gap: 5px; }
@@ -113,7 +132,9 @@
         <div class="header">
             <h2>📑 得賢引才 - 預計承接轉換紀錄</h2>
             <div class="header-actions">
-                <button class="toggle-btn" id="toggleCompletedBtn">🙈 隱藏已結案</button>
+                <label class="checkbox-container">
+                    <input type="checkbox" id="showCompletedCheckbox"> 顯示已結案
+                </label>
                 <button class="add-btn" id="addBlockBtn">+ 新增案件</button>
             </div>
         </div>
@@ -209,7 +230,7 @@
         let globalData = {}; 
         let currentSearchText = ""; 
         let sortableInstance = null; 
-        let isCompletedHidden = false; // 🚀 新增全域變數：追蹤是否隱藏已結案
+        let showCompleted = false; // 🚀 預設：不顯示已結案 (自動隱藏)
 
         function getStatusInfo(statusText) {
             if(statusText.includes("準備中")) return { class: "status-prepare", color: "#166534" };
@@ -220,18 +241,10 @@
             return { class: "status-process", color: "#0369a1" }; 
         }
 
-        // 🚀 監聽隱藏按鈕點擊事件
-        document.getElementById('toggleCompletedBtn').addEventListener('click', () => {
-            isCompletedHidden = !isCompletedHidden;
-            const btn = document.getElementById('toggleCompletedBtn');
-            if(isCompletedHidden) {
-                btn.innerHTML = "👁️ 顯示已結案";
-                btn.style.backgroundColor = "#e2e8f0";
-            } else {
-                btn.innerHTML = "🙈 隱藏已結案";
-                btn.style.backgroundColor = "#f1f5f9";
-            }
-            renderBoard(); // 重新渲染畫面
+        // 🚀 監聽核取方塊切換
+        document.getElementById('showCompletedCheckbox').addEventListener('change', (e) => {
+            showCompleted = e.target.checked;
+            renderBoard(); 
         });
 
         document.getElementById('searchInput').addEventListener('input', (e) => {
@@ -257,8 +270,8 @@
             Object.keys(globalData).forEach(id => {
                 const b = globalData[id];
                 
-                // 🚀 核心過濾邏輯：如果開啟了隱藏，且狀態包含「已結案」，就跳過不顯示
-                if (isCompletedHidden && b.mainStatus && b.mainStatus.includes("已結案")) {
+                // 🚀 核心邏輯：如果沒有勾選顯示，且狀態為「已結案」，就自動隱藏
+                if (!showCompleted && b.mainStatus && b.mainStatus.includes("已結案")) {
                     return; 
                 }
 
@@ -312,8 +325,9 @@
             if(!hasVisibleCases) {
                 if(currentSearchText) {
                     container.innerHTML = `<p style="color: #888;">找不到包含「<b>${currentSearchText}</b>」的案件。</p>`;
-                } else if(isCompletedHidden) {
-                    container.innerHTML = `<p style="color: #888;">目前所有案件皆已結案。點擊上方「顯示已結案」即可查看。</p>`;
+                } else if(!showCompleted) {
+                    // 🚀 貼心提示
+                    container.innerHTML = `<p style="color: #888;">畫面上非常乾淨！<br><br>如果您要找之前的資料，請勾選右上角的「☑️ 顯示已結案」。</p>`;
                 }
             }
 
